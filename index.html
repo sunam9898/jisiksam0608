@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘 해야하는 일 관리앱</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+            min-height: 100vh;
+        }
+        .quote-container {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .quote-text {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        .quote-author {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .todo-item {
+            transition: all 0.3s ease;
+        }
+        .todo-item:hover {
+            transform: translateX(5px);
+        }
+        .todo-item.completed {
+            background-color: #f1f5f9;
+        }
+        .custom-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .delete-btn {
+            transition: all 0.2s ease;
+        }
+        .delete-btn:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="py-5">
+    <div class="container">
+        <div class="quote-container">
+            <p class="quote-text" id="quote-text"></p>
+            <p class="quote-author" id="quote-author"></p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">오늘 해야하는 일 관리앱</h1>
+            
+            <div class="flex gap-3 mb-6">
+                <input type="text" id="todo-input" 
+                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="할일을 입력하세요">
+                <button onclick="addTodo()" 
+                        class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                    추가
+                </button>
+            </div>
+            
+            <ul class="todo-list space-y-3" id="todo-list"></ul>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        // 격언 목록
+        const quotes = [
+            {
+                text: "시간은 가장 귀중한 자산이다. 그것을 어떻게 사용하느냐가 당신의 미래를 결정한다.",
+                author: "짐 론"
+            },
+            {
+                text: "오늘 할 수 있는 일을 내일로 미루지 마라.",
+                author: "벤자민 프랭클린"
+            },
+            {
+                text: "시간을 지배하는 자가 인생을 지배한다.",
+                author: "아리스토텔레스"
+            },
+            {
+                text: "성공의 비결은 단 한 가지, 잘할 수 있는 일에 광적으로 집중하는 것이다.",
+                author: "톰 모나건"
+            },
+            {
+                text: "시간은 당신이 그것을 어떻게 사용하느냐에 따라 당신의 친구가 되거나 적이 된다.",
+                author: "알렉산더 그레이엄 벨"
+            },
+            {
+                text: "작은 진전이라도 매일 이루어내라. 그것이 큰 차이를 만든다.",
+                author: "마하트마 간디"
+            }
+        ];
+
+        // 랜덤 격언 표시 함수
+        function displayRandomQuote() {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            const quote = quotes[randomIndex];
+            document.getElementById('quote-text').textContent = `"${quote.text}"`;
+            document.getElementById('quote-author').textContent = `- ${quote.author}`;
+        }
+
+        // 할일 목록을 저장할 배열
+        let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+        // 페이지 로드 시 저장된 할일 목록 표시
+        window.onload = function() {
+            displayRandomQuote();
+            renderTodos();
+        };
+
+        // 할일 추가 함수
+        function addTodo() {
+            const input = document.getElementById('todo-input');
+            const text = input.value.trim();
+            
+            if (text) {
+                const todo = {
+                    id: Date.now(),
+                    text: text,
+                    completed: false
+                };
+                
+                todos.push(todo);
+                saveTodos();
+                renderTodos();
+                input.value = '';
+
+                // SweetAlert2로 성공 메시지 표시
+                Swal.fire({
+                    title: '할일이 추가되었습니다!',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                // 입력값이 비어있을 때 경고 메시지
+                Swal.fire({
+                    title: '알림',
+                    text: '할일을 입력해주세요!',
+                    icon: 'warning',
+                    confirmButtonText: '확인'
+                });
+            }
+        }
+
+        // 할일 삭제 함수
+        function deleteTodo(id) {
+            Swal.fire({
+                title: '정말 삭제하시겠습니까?',
+                text: "삭제된 할일은 복구할 수 없습니다.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: '삭제',
+                cancelButtonText: '취소'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    todos = todos.filter(todo => todo.id !== id);
+                    saveTodos();
+                    renderTodos();
+                    Swal.fire({
+                        title: '삭제되었습니다!',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            });
+        }
+
+        // 할일 완료 상태 토글 함수
+        function toggleTodo(id) {
+            todos = todos.map(todo => {
+                if (todo.id === id) {
+                    return { ...todo, completed: !todo.completed };
+                }
+                return todo;
+            });
+            saveTodos();
+            renderTodos();
+        }
+
+        // 할일 목록 렌더링 함수
+        function renderTodos() {
+            const todoList = document.getElementById('todo-list');
+            todoList.innerHTML = '';
+            
+            todos.forEach(todo => {
+                const li = document.createElement('li');
+                li.className = `todo-item flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-gray-100 ${todo.completed ? 'completed' : ''}`;
+                
+                li.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" class="custom-checkbox" ${todo.completed ? 'checked' : ''} 
+                               onclick="toggleTodo(${todo.id})">
+                        <span class="${todo.completed ? 'line-through text-gray-500' : 'text-gray-800'}">${todo.text}</span>
+                    </div>
+                    <button class="delete-btn px-3 py-1 text-sm text-red-500 hover:text-red-700" 
+                            onclick="deleteTodo(${todo.id})">
+                        삭제
+                    </button>
+                `;
+                
+                todoList.appendChild(li);
+            });
+        }
+
+        // 로컬 스토리지에 할일 목록 저장
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+
+        // Enter 키로 할일 추가
+        document.getElementById('todo-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTodo();
+            }
+        });
+    </script>
+</body>
+</html>
